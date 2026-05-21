@@ -8,7 +8,8 @@ dotenv.config({
 const config = {
   connection_string: process.env.CONNECTION_STRING as string,
   port: process.env.PORT,
-//   secret: process.env.JWT_SECRET,
+  jwt_secret: process.env.JWT_SECRET as string,
+  bcrypt_salt_rounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10')
 };
 
 export default config;
