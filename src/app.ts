@@ -10,9 +10,11 @@ app.use(express.text());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.json({ message: "DevPulse API running" });
+  res.json({
+    message: "DevPulse server running",
+    author: "Robin",
+  });
 });
-
 
 app.use("/api/auth", authRouter);
 

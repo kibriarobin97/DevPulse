@@ -1,3 +1,6 @@
+import type { JwtPayload } from "jsonwebtoken";
+import type { Request } from "express";
+
 export interface IUser {
   id: number;
   name: string;
@@ -18,4 +21,8 @@ export interface ISignupPayload {
   email: string;
   password: string;
   role: "contributor" | "maintainer";
+}
+
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
 }
