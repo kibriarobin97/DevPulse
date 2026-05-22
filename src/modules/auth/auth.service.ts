@@ -3,9 +3,9 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { pool } from "../../db/db";
 import config from "../../config";
-import type { ISignupPayload, ILoginPayload } from "../../type";
+import type { ISignup, ILogin } from "../../type";
 
-const signupUserIntoDB = async (payload: ISignupPayload) => {
+const signupUserIntoDB = async (payload: ISignup) => {
   const { name, email, password, role } = payload;
 
   const existingUser = await pool.query(
@@ -30,7 +30,7 @@ const signupUserIntoDB = async (payload: ISignupPayload) => {
   return result.rows[0];
 };
 
-const loginUserIntoDB = async (payload: ILoginPayload) => {
+const loginUserIntoDB = async (payload: ILogin) => {
   const { email, password } = payload;
 
   const userData = await pool.query(
@@ -56,11 +56,15 @@ const loginUserIntoDB = async (payload: ILoginPayload) => {
     expiresIn: "1d",
   });
 
-  const { password: _, ...userWithoutPassword } = user;
+ const userResult = await pool.query(
+    `SELECT id, name, email, role, created_at, updated_at 
+     FROM users WHERE email=$1`,
+    [email],
+  );
 
   return {
     token,
-    user: userWithoutPassword,
+    user: userResult.rows[0],
   };
 };
 
