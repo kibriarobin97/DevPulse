@@ -139,7 +139,8 @@ const updateIssue = async (req: Request, res: Response) => {
 const deleteIssue = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await issueService.deleteIssueFromDB(id as string);
+    const userRole = req.user.role;
+    await issueService.deleteIssueFromDB(id as string, userRole);
 
    
     sendResponse(res, {

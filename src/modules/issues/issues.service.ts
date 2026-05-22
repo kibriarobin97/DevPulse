@@ -3,25 +3,22 @@ import { pool } from "../../db/db";
 const createIssueIntoDB = async (payload: any, reporterId: number) => {
   const { title, description, type } = payload;
 
- 
   const result = await pool.query(
     `
     INSERT INTO issues(title, description, type, reporter_id)
     VALUES($1, $2, $3, $4)
     RETURNING *
     `,
-    [title, description, type, reporterId]
+    [title, description, type, reporterId],
   );
   const newIssue = result.rows[0];
-
 
   const reporterResult = await pool.query(
     `
     SELECT id, name, role FROM users WHERE id=$1
     `,
-    [reporterId]
+    [reporterId],
   );
-
 
   const finalResponse = {
     ...newIssue,
@@ -31,7 +28,6 @@ const createIssueIntoDB = async (payload: any, reporterId: number) => {
   return { rows: [finalResponse] };
 };
 
-
 const getAllIssuesFromDB = async (query: any) => {
   const { sort, type, status } = query;
 
@@ -40,7 +36,6 @@ const getAllIssuesFromDB = async (query: any) => {
   const values: string[] = [];
   let index = 1;
 
- 
   if (type) {
     conditions.push(`type=$${index}`);
     values.push(type);
@@ -57,7 +52,6 @@ const getAllIssuesFromDB = async (query: any) => {
     sqlQuery += ` WHERE ${conditions.join(" AND ")}`;
   }
 
- 
   sqlQuery += ` ORDER BY created_at ${sort === "oldest" ? "ASC" : "DESC"}`;
 
   const result = await pool.query(sqlQuery, values);
@@ -67,13 +61,11 @@ const getAllIssuesFromDB = async (query: any) => {
     return { rows: [] };
   }
 
-
   const usersResult = await pool.query(`SELECT id, name, role FROM users`);
   const allUsers = usersResult.rows;
 
   const issuesWithReporter = [];
 
-  
   for (let i = 0; i < issues.length; i++) {
     const currentIssue = issues[i];
     let foundReporter = null;
@@ -94,13 +86,12 @@ const getAllIssuesFromDB = async (query: any) => {
   return { rows: issuesWithReporter };
 };
 
-
 const getSingleIssueFromDB = async (id: string) => {
   const result = await pool.query(
     `
     SELECT * FROM issues WHERE id=$1
     `,
-    [id]
+    [id],
   );
 
   if (result.rows.length === 0) {
@@ -109,12 +100,11 @@ const getSingleIssueFromDB = async (id: string) => {
 
   const issue = result.rows[0];
 
- 
   const reporterResult = await pool.query(
     `
     SELECT id, name, role FROM users WHERE id=$1
     `,
-    [issue.reporter_id]
+    [issue.reporter_id],
   );
 
   const finalIssue = {
@@ -125,13 +115,17 @@ const getSingleIssueFromDB = async (id: string) => {
   return { rows: [finalIssue] };
 };
 
-const updateIssueIntoDB = async (id: string, payload: any, userId: number, userRole: string) => {
-
+const updateIssueIntoDB = async (
+  id: string,
+  payload: any,
+  userId: number,
+  userRole: string,
+) => {
   const issueResult = await pool.query(
     `
     SELECT * FROM issues WHERE id=$1
     `,
-    [id]
+    [id],
   );
 
   if (issueResult.rows.length === 0) {
@@ -140,19 +134,20 @@ const updateIssueIntoDB = async (id: string, payload: any, userId: number, userR
 
   const issue = issueResult.rows[0];
 
-  
   if (userRole === "contributor") {
     if (issue.reporter_id !== userId) {
-      throw new Error("FORBIDDEN"); 
-    }
-    if (issue.status !== "open") {
-      throw new Error("CONFLICT");
+      throw new Error("FORBIDDEN");
     }
   }
+  if (issue.status === "resolved") {
+    throw new Error("CONFLICT");
+  }
+  if (issue.status === "in_progress" && payload.status === "open") {
+    throw new Error("CONFLICT");
+  }
 
-  const { title, description, type } = payload;
+  const { title, description, type, status } = payload;
 
-  
   const result = await pool.query(
     `
     UPDATE issues 
@@ -160,21 +155,21 @@ const updateIssueIntoDB = async (id: string, payload: any, userId: number, userR
       title=COALESCE($1, title),
       description=COALESCE($2, description),
       type=COALESCE($3, type),
+      status=COALESCE($4, status),
       updated_at=NOW()
-    WHERE id=$4
+    WHERE id=$5
     RETURNING *
     `,
-    [title || null, description || null, type || null, id]
+    [title || null, description || null, type || null, status || null, id],
   );
-  
+
   const updatedIssue = result.rows[0];
 
- 
   const reporterResult = await pool.query(
     `
     SELECT id, name, role FROM users WHERE id=$1
     `,
-    [updatedIssue.reporter_id]
+    [updatedIssue.reporter_id],
   );
 
   const finalUpdatedIssue = {
@@ -185,27 +180,30 @@ const updateIssueIntoDB = async (id: string, payload: any, userId: number, userR
   return { rows: [finalUpdatedIssue] };
 };
 
-
-const deleteIssueFromDB = async (id: string) => {
+const deleteIssueFromDB = async (
+  id: string,
+  userRole: string,
+) => {
   const checkResult = await pool.query(
     `
     SELECT * FROM issues WHERE id=$1
     `,
-    [id]
+    [id],
   );
 
   if (checkResult.rows.length === 0) {
     throw new Error("NOT_FOUND");
   }
-
-  
+  if (userRole !== "maintainer") {
+    throw new Error("FORBIDDEN");
+  }
   const result = await pool.query(
     `
     DELETE FROM issues WHERE id=$1 RETURNING id
     `,
-    [id]
+    [id],
   );
-  
+
   return result;
 };
 
