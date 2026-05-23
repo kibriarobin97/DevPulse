@@ -7,7 +7,7 @@ dotenv.config({
 
 const config = {
   connection_string: process.env.CONNECTION_STRING as string,
-  port: process.env.PORT,
+  port: process.env.PORT || 3000,
   jwt_secret: process.env.JWT_SECRET as string,
   bcrypt_salt_rounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10')
 };

@@ -2,3 +2,4 @@ node_modules
 dist
 .env
 logger.txt
+.vercel

@@ -12,7 +12,7 @@ const auth = (...roles: string[]) => {
         res.status(401).json({
           success: false,
           message: "Missing, expired, or invalid JWT token",
-          errors: "Unauthorized access",
+          error: "Unauthorized access",
         });
         return;
       }
@@ -31,7 +31,7 @@ const auth = (...roles: string[]) => {
         res.status(404).json({
           success: false,
           message: "Requested resource does not exist",
-          errors: "User not found!",
+          error: "User not found!",
         });
         return;
       }
@@ -42,7 +42,7 @@ const auth = (...roles: string[]) => {
         res.status(403).json({
           success: false,
           message: "Valid token but insufficient role/permissions",
-          errors: "Forbidden access",
+          error: "Forbidden access",
         });
         return;
       }
@@ -58,7 +58,7 @@ const auth = (...roles: string[]) => {
       res.status(401).json({
         success: false,
         message: "Missing, expired, or invalid JWT token",
-        errors: "Invalid token!",
+        error: "Invalid token!",
       });
     }
   };

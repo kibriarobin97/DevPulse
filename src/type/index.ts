@@ -23,9 +23,6 @@ export interface ISignup {
   role: "contributor" | "maintainer";
 }
 
-// export interface AuthRequest extends Request {
-//   user?: JwtPayload;
-// }
 
 export interface IIssue {
   id: number;
@@ -48,4 +45,5 @@ export interface IUpdateIssue {
   title?: string;
   description?: string;
   type?: "bug" | "feature_request";
+  status?: "open" | "in_progress" | "resolved";
 }

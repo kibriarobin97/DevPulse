@@ -1,6 +1,7 @@
 import { pool } from "../../db/db";
+import type { ICreateIssue, IUpdateIssue } from "../../type";
 
-const createIssueIntoDB = async (payload: any, reporterId: number) => {
+const createIssueIntoDB = async (payload: ICreateIssue, reporterId: number) => {
   const { title, description, type } = payload;
 
   const result = await pool.query(
@@ -28,7 +29,11 @@ const createIssueIntoDB = async (payload: any, reporterId: number) => {
   return { rows: [finalResponse] };
 };
 
-const getAllIssuesFromDB = async (query: any) => {
+const getAllIssuesFromDB = async (query: {
+  sort?: string;
+  type?: string;
+  status?: string;
+}) => {
   const { sort, type, status } = query;
 
   let sqlQuery = `SELECT * FROM issues`;
@@ -117,7 +122,7 @@ const getSingleIssueFromDB = async (id: string) => {
 
 const updateIssueIntoDB = async (
   id: string,
-  payload: any,
+  payload: IUpdateIssue,
   userId: number,
   userRole: string,
 ) => {
@@ -160,7 +165,13 @@ const updateIssueIntoDB = async (
     WHERE id=$5
     RETURNING *
     `,
-    [title || null, description || null, type || null, status || null, id],
+    [
+      title !== undefined ? title : null,
+      description !== undefined ? description : null,
+      type !== undefined ? type : null,
+      status !== undefined ? status : null,
+      id,
+    ],
   );
 
   const updatedIssue = result.rows[0];
@@ -180,10 +191,7 @@ const updateIssueIntoDB = async (
   return { rows: [finalUpdatedIssue] };
 };
 
-const deleteIssueFromDB = async (
-  id: string,
-  userRole: string,
-) => {
+const deleteIssueFromDB = async (id: string, userRole: string) => {
   const checkResult = await pool.query(
     `
     SELECT * FROM issues WHERE id=$1

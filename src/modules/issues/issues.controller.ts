@@ -1,15 +1,12 @@
 import sendResponse from "../../utility/sendResponse";
 import { issueService } from "./issues.service";
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
-
-
-const createIssue = async (req: Request, res: Response) => {
+const createIssue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const reporterId = req.user.id;
     const result = await issueService.createIssueIntoDB(req.body, reporterId);
 
-    
     sendResponse(res, {
       statusCode: 201,
       success: true,
@@ -17,38 +14,34 @@ const createIssue = async (req: Request, res: Response) => {
       data: result.rows[0],
     });
   } catch (error: any) {
-    sendResponse(res, {
-      statusCode: 500,
-      success: false,
-      message: "Failed to create issue",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-
-const getAllIssues = async (req: Request, res: Response) => {
+const getAllIssues = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const result = await issueService.getAllIssuesFromDB(req.query);
 
     sendResponse(res, {
       statusCode: 200,
       success: true,
-      message: "Issues fetched successfully", 
+      message: "Issues fetched successfully",
       data: result.rows,
     });
   } catch (error: any) {
-    sendResponse(res, {
-      statusCode: 500,
-      success: false,
-      message: "Failed to fetch issues",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-
-const getSingleIssue = async (req: Request, res: Response) => {
+const getSingleIssue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { id } = req.params;
     const result = await issueService.getSingleIssueFromDB(id as string);
@@ -70,23 +63,22 @@ const getSingleIssue = async (req: Request, res: Response) => {
       data: result.rows[0],
     });
   } catch (error: any) {
-    sendResponse(res, {
-      statusCode: 500,
-      success: false,
-      message: "Failed to fetch issue",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-
-const updateIssue = async (req: Request, res: Response) => {
+const updateIssue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id; 
+    const userId = req.user.id;
     const userRole = req.user.role;
 
-    const result = await issueService.updateIssueIntoDB(id as string, req.body, userId, userRole);
+    const result = await issueService.updateIssueIntoDB(
+      id as string,
+      req.body,
+      userId,
+      userRole,
+    );
 
     sendResponse(res, {
       statusCode: 200,
@@ -95,7 +87,6 @@ const updateIssue = async (req: Request, res: Response) => {
       data: result.rows[0],
     });
   } catch (error: any) {
-    
     if (error.message === "NOT_FOUND") {
       sendResponse(res, {
         statusCode: 404,
@@ -126,23 +117,16 @@ const updateIssue = async (req: Request, res: Response) => {
       return;
     }
 
-    sendResponse(res, {
-      statusCode: 500,
-      success: false,
-      message: "Failed to update issue",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-
-const deleteIssue = async (req: Request, res: Response) => {
+const deleteIssue = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const userRole = req.user.role;
     await issueService.deleteIssueFromDB(id as string, userRole);
 
-   
     sendResponse(res, {
       statusCode: 200,
       success: true,
@@ -159,12 +143,18 @@ const deleteIssue = async (req: Request, res: Response) => {
       return;
     }
 
-    sendResponse(res, {
-      statusCode: 500,
-      success: false,
-      message: "Failed to delete issue",
-      error: error.message,
-    });
+   
+    if (error.message === "FORBIDDEN") {
+      sendResponse(res, {
+        statusCode: 403,
+        success: false,
+        message: "Valid token but insufficient role/permissions",
+        error: "Only maintainers can delete issues",
+      });
+      return;
+    }
+
+    next(error);
   }
 };
 
